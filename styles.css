@@ -1,0 +1,245 @@
+/* github-visual-trend - dark observatory theme
+   palette: validated 8-slot categorical (dark mode) - see README */
+
+:root {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --baseline: #383835;
+  --ring: rgba(255, 255, 255, 0.1);
+  --s1: #3987e5;
+  --s2: #008300;
+  --s3: #d55181;
+  --s4: #c98500;
+  --s5: #199e70;
+  --s6: #d95926;
+  --s7: #9085e9;
+  --s8: #e66767;
+  --serif: "Fraunces", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+[hidden] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* film grain */
+.grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 9s steps(10) infinite;
+}
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -2%); }
+  80% { transform: translate(3%, 3%); }
+}
+
+a { color: var(--s1); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.mono { font-family: var(--mono); }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative;
+  padding: clamp(48px, 9vw, 120px) 24px clamp(36px, 6vw, 80px);
+  border-bottom: 1px solid var(--grid);
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(57, 135, 229, 0.14), transparent 60%),
+    radial-gradient(700px 400px at 0% 110%, rgba(144, 133, 233, 0.10), transparent 60%),
+    var(--page);
+}
+.hero-inner { max-width: 1160px; margin: 0 auto; }
+
+.kicker {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hero-title {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: clamp(42px, 7.5vw, 96px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  animation: rise 0.7s 0.08s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.hero-title em {
+  font-weight: 300;
+  font-style: italic;
+  color: var(--s1);
+}
+
+.hero-sub {
+  max-width: 640px;
+  margin-top: 26px;
+  color: var(--ink-2);
+  animation: rise 0.7s 0.16s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--grid);
+  border: 1px solid var(--grid);
+  margin-top: 44px;
+  animation: rise 0.7s 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.stat-tile {
+  background: var(--surface);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-value {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.stat-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- loading / error ---------- */
+.loading, .error {
+  max-width: 1160px;
+  margin: 60px auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+}
+.loading-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--s1);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.9); opacity: 0.35; }
+}
+.error { color: var(--s8); }
+
+/* ---------- chart grid ---------- */
+.chart-grid {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 56px) 24px 40px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+.card.span2 { grid-column: span 2; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--ring);
+  border-radius: 14px;
+  padding: 22px 22px 16px;
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.65s cubic-bezier(0.2, 0.7, 0.2, 1),
+              transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1),
+              border-color 0.3s;
+}
+.card.in { opacity: 1; transform: translateY(0); }
+.card:hover { border-color: rgba(255, 255, 255, 0.22); }
+
+.card-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.card-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 30px;
+  color: var(--muted);
+  line-height: 1;
+  padding-top: 2px;
+  min-width: 44px;
+}
+.card-head h2 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+.story {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  margin-top: 5px;
+  max-width: 60ch;
+}
+
+.canvas-wrap { position: relative; height: 300px; }
+.canvas-wrap.tall { height: 380px; }
+
+/* ---------- footer ---------- */
+.foot {
+  border-top: 1px solid var(--grid);
+  max-width: 1160px;
+  margin: 30px auto 0;
+  padding: 26px 24px 46px;
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .card.span2 { grid-column: span 1; }
+  .canvas-wrap, .canvas-wrap.tall { height: 280px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain { animation: none; }
+  .kicker, .hero-title, .hero-sub, .stat-row { animation: none; opacity: 1; transform: none; }
+  .card { transition: none; opacity: 1; transform: none; }
+}

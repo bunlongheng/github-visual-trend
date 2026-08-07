@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GitHub Visual Trend - the trending page, told in charts</title>
+<meta name="description" content="GitHub trending turned into 12 animated charts. The list is a table; this is the story." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%A1</text></svg>" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="kicker">observatory / last 7 days / live from the github search api</p>
+    <h1 class="hero-title">The trending page,<br /><em>told in charts.</em></h1>
+    <p class="hero-sub">
+      github.com/trending is a list. Lists hide the story. This page pulls this week's
+      rising repositories and lets 12 animated charts do the talking - who is winning,
+      in which language, at what velocity, and how lopsided the race really is.
+    </p>
+    <div class="stat-row" id="statRow">
+      <div class="stat-tile"><span class="stat-value" id="statRepos">-</span><span class="stat-label">repos scanned</span></div>
+      <div class="stat-tile"><span class="stat-value" id="statStars">-</span><span class="stat-label">stars this week</span></div>
+      <div class="stat-tile"><span class="stat-value" id="statLang">-</span><span class="stat-label">top language</span></div>
+      <div class="stat-tile"><span class="stat-value" id="statLeader">-</span><span class="stat-label">week's leader</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="loading" class="loading">
+    <span class="loading-dot"></span>
+    <span class="mono">contacting api.github.com …</span>
+  </div>
+  <div id="error" class="error" hidden>
+    <p class="mono" id="errorMsg"></p>
+  </div>
+
+  <section class="chart-grid" id="chartGrid" hidden>
+
+    <article class="card span2" data-chart="leaders">
+      <div class="card-head"><span class="card-num">01</span>
+        <div><h2>The leaderboard</h2><p class="story" id="story-leaders"></p></div>
+      </div>
+      <div class="canvas-wrap tall"><canvas id="c-leaders"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="langShare">
+      <div class="card-head"><span class="card-num">02</span>
+        <div><h2>Language share</h2><p class="story" id="story-langShare"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-langShare"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="velocity">
+      <div class="card-head"><span class="card-num">03</span>
+        <div><h2>Star velocity</h2><p class="story" id="story-velocity"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-velocity"></canvas></div>
+    </article>
+
+    <article class="card span2" data-chart="scatter">
+      <div class="card-head"><span class="card-num">04</span>
+        <div><h2>Stars vs forks</h2><p class="story" id="story-scatter"></p></div>
+      </div>
+      <div class="canvas-wrap tall"><canvas id="c-scatter"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="langStars">
+      <div class="card-head"><span class="card-num">05</span>
+        <div><h2>Stars by language</h2><p class="story" id="story-langStars"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-langStars"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="timeline">
+      <div class="card-head"><span class="card-num">06</span>
+        <div><h2>Birth timeline</h2><p class="story" id="story-timeline"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-timeline"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="licenses">
+      <div class="card-head"><span class="card-num">07</span>
+        <div><h2>License picks</h2><p class="story" id="story-licenses"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-licenses"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="owners">
+      <div class="card-head"><span class="card-num">08</span>
+        <div><h2>Orgs vs individuals</h2><p class="story" id="story-owners"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-owners"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="avgStars">
+      <div class="card-head"><span class="card-num">09</span>
+        <div><h2>Average heat per repo</h2><p class="story" id="story-avgStars"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-avgStars"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="issues">
+      <div class="card-head"><span class="card-num">10</span>
+        <div><h2>Issue load at the top</h2><p class="story" id="story-issues"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-issues"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="topics">
+      <div class="card-head"><span class="card-num">11</span>
+        <div><h2>Hot topics</h2><p class="story" id="story-topics"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-topics"></canvas></div>
+    </article>
+
+    <article class="card" data-chart="classes">
+      <div class="card-head"><span class="card-num">12</span>
+        <div><h2>The long tail</h2><p class="story" id="story-classes"></p></div>
+      </div>
+      <div class="canvas-wrap"><canvas id="c-classes"></canvas></div>
+    </article>
+
+  </section>
+</main>
+
+<footer class="foot">
+  <p class="mono">data: GitHub Search API - repositories created in the last 7 days, ranked by stars, top 100. cached 30 min in your browser.</p>
+  <p class="mono">github-visual-trend - built by <a href="https://github.com/bunlongheng">bunlongheng</a></p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
