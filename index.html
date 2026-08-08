@@ -9,7 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%A1</text></svg>" />
+<link rel="icon" href="trophy.png" />
+<link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -17,7 +19,17 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <p class="kicker">observatory / last 7 days / live from the github search api</p>
+    <p class="kicker" id="kicker">observatory / last 7 days / live from the github search api</p>
+    <nav class="range-bar" id="rangeBar" aria-label="Time range">
+      <button class="range-btn" data-days="1">day</button>
+      <button class="range-btn active" data-days="7">week</button>
+      <button class="range-btn" data-days="30">month</button>
+      <button class="range-btn" data-days="90">3m</button>
+      <button class="range-btn" data-days="180">6m</button>
+      <button class="range-btn" data-days="365">1y</button>
+      <button class="range-btn" data-days="1095">3y</button>
+      <button class="range-btn" data-days="1825">5y</button>
+    </nav>
     <h1 class="hero-title">The trending page,<br /><em>told in charts.</em></h1>
     <p class="hero-sub">
       github.com/trending is a list. Lists hide the story. This page pulls this week's
@@ -26,7 +38,7 @@
     </p>
     <div class="stat-row" id="statRow">
       <div class="stat-tile"><span class="stat-value" id="statRepos">-</span><span class="stat-label">repos scanned</span></div>
-      <div class="stat-tile"><span class="stat-value" id="statStars">-</span><span class="stat-label">stars this week</span></div>
+      <div class="stat-tile"><span class="stat-value" id="statStars">-</span><span class="stat-label" id="statPeriodLabel">stars this week</span></div>
       <div class="stat-tile"><span class="stat-value" id="statLang">-</span><span class="stat-label">top language</span></div>
       <div class="stat-tile"><span class="stat-value" id="statLeader">-</span><span class="stat-label">week's leader</span></div>
     </div>
@@ -46,7 +58,7 @@
 
     <article class="card span2" data-chart="leaders">
       <div class="card-head"><span class="card-num">01</span>
-        <div><h2>The leaderboard</h2><p class="story" id="story-leaders"></p></div>
+        <div><h2><img src="trophy.png" class="card-trophy" alt="" />The leaderboard</h2><p class="story" id="story-leaders"></p></div>
       </div>
       <div class="canvas-wrap tall"><canvas id="c-leaders"></canvas></div>
     </article>

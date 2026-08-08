@@ -40,6 +40,76 @@
   };
   const delayByIndex = (ctx) => (ctx.type === "data" ? ctx.dataIndex * 60 : 0);
 
+  // ---- tiny tick icons (language logos + owner avatars) ----
+  const LANG_ICON = {
+    JavaScript:      "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg",
+    TypeScript:      "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg",
+    Python:          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg",
+    Rust:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg",
+    Go:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original-wordmark.svg",
+    Java:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg",
+    "C++":           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg",
+    C:               "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg",
+    Ruby:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg",
+    PHP:             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg",
+    Swift:           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg",
+    Kotlin:          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg",
+    Shell:           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bash/bash-original.svg",
+    Dart:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dart/dart-original.svg",
+    Lua:             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/lua/lua-original.svg",
+    CSS:             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/css3/css3-original.svg",
+    HTML:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-original.svg",
+    Dockerfile:      "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg",
+    "Jupyter Notebook": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jupyter/jupyter-original-wordmark.svg",
+    Vue:             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg",
+    Zig:             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/zig/zig-original.svg",
+  };
+
+  function loadImg(src) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = src;
+    return img;
+  }
+
+  // axis: 'x' draws below bar bottoms | 'y' draws inside bars at the left edge
+  function axisImgPlugin(imgArr, axis) {
+    const SZ = 18;
+    let scheduled = false;
+    return {
+      id: "axisImgs_" + axis + "_" + Math.random().toString(36).slice(2),
+      afterDraw(chart) {
+        const scale = chart.scales[axis];
+        if (!scale) return;
+        const { ctx, chartArea } = chart;
+        let allReady = true;
+        imgArr.forEach((img, i) => {
+          if (!img?.complete || !img.naturalWidth) { allReady = false; return; }
+          let cx, cy;
+          if (axis === "x") {
+            cx = scale.getPixelForValue(i);
+            cy = scale.bottom + 13;
+          } else {
+            cx = chartArea.left + SZ / 2 + 3;
+            cy = scale.getPixelForValue(i);
+          }
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, SZ / 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, cx - SZ / 2, cy - SZ / 2, SZ, SZ);
+          ctx.restore();
+        });
+        if (!allReady && !scheduled) {
+          scheduled = true;
+          Promise.all(imgArr.filter(Boolean).map((img) =>
+            img.complete ? Promise.resolve() : new Promise((r) => img.addEventListener("load", r, { once: true }))
+          )).then(() => { scheduled = false; chart.update("none"); });
+        }
+      },
+    };
+  }
+
   const barScales = (horizontal) => {
     const valueAxis = {
       grid: { color: GRID, drawTicks: false },
@@ -54,21 +124,33 @@
   };
 
   // ---------- data ----------
-  const CACHE_KEY = "gvt-cache-v1";
   const CACHE_TTL = 30 * 60 * 1000;
+  const cacheKey = (days) => `gvt-v2-${days}`;
+
+  const RANGE_LABEL = {
+    1: "last 24 hours", 7: "last 7 days", 30: "last 30 days",
+    90: "last 3 months", 180: "last 6 months", 365: "last year",
+    1095: "last 3 years", 1825: "last 5 years",
+  };
+  const STARS_LABEL = {
+    1: "stars today", 7: "stars this week", 30: "stars this month",
+    90: "stars (3m)", 180: "stars (6m)", 365: "stars this year",
+    1095: "stars (3y)", 1825: "stars (5y)",
+  };
 
   const daysAgo = (n) => {
     const d = new Date(Date.now() - n * 864e5);
     return d.toISOString().slice(0, 10);
   };
 
-  async function fetchTrending() {
+  async function fetchTrending(days) {
+    const key = cacheKey(days);
     try {
-      const hit = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      const hit = JSON.parse(localStorage.getItem(key) || "null");
       if (hit && Date.now() - hit.at < CACHE_TTL) return hit.items;
     } catch (_) { /* stale cache is not fatal */ }
 
-    const q = encodeURIComponent(`created:>${daysAgo(7)}`);
+    const q = encodeURIComponent(`created:>${daysAgo(days)}`);
     const url = `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`;
     const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
     if (!res.ok) throw new Error(`GitHub API ${res.status} - ${res.status === 403 ? "rate limited, retry in a minute" : res.statusText}`);
@@ -82,11 +164,12 @@
       language: r.language || "Unknown",
       license: r.license ? r.license.spdx_id : "None",
       ownerType: r.owner.type,
+      owner: r.owner.login,
       topics: r.topics || [],
       created: r.created_at,
       url: r.html_url,
     }));
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), items })); } catch (_) { /* quota */ }
+    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (_) { /* quota */ }
     return items;
   }
 
@@ -337,6 +420,7 @@
         .map(([k, rs]) => [k, Math.round(sum(rs, (r) => r.stars) / rs.length), rs.length])
         .sort((a, b) => b[1] - a[1]).slice(0, 8);
       story("avgStars", `Per repo, ${langs[0][0]} runs hottest: ${fmt.format(langs[0][1])} stars on average (languages with 3+ trending repos).`);
+      const langImgs = langs.map(([k]) => LANG_ICON[k] ? loadImg(LANG_ICON[k]) : null);
       make("avgStars", {
         type: "bar",
         data: {
@@ -344,6 +428,7 @@
           datasets: [{ data: langs.map(([, avg]) => avg), backgroundColor: SERIES[2], borderRadius: 4, barPercentage: 0.66 }],
         },
         options: {
+          layout: { padding: { bottom: 28 } },
           maintainAspectRatio: false,
           animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
@@ -352,6 +437,7 @@
           },
           scales: barScales(false),
         },
+        plugins: [axisImgPlugin(langImgs, "x")],
       });
     }
 
@@ -360,6 +446,7 @@
       const top = byStars.slice(0, 10);
       const heaviest = [...top].sort((a, b) => b.issues - a.issues)[0];
       story("issues", `Fame has a price: ${heaviest.short} already carries ${fmt.format(heaviest.issues)} open issues.`);
+      const ownerImgs = top.map((r) => loadImg(`https://avatars.githubusercontent.com/${r.owner}?s=20`));
       make("issues", {
         type: "bar",
         data: {
@@ -376,6 +463,7 @@
           },
           scales: barScales(true),
         },
+        plugins: [axisImgPlugin(ownerImgs, "y")],
       });
     }
 
@@ -448,20 +536,47 @@
   }
 
   // ---------- boot ----------
-  (async () => {
-    const loading = document.getElementById("loading");
-    const grid = document.getElementById("chartGrid");
+  const loading = document.getElementById("loading");
+  const grid = document.getElementById("chartGrid");
+  const errorBox = document.getElementById("error");
+
+  async function refreshCharts(days) {
+    loading.hidden = false;
+    grid.hidden = true;
+    errorBox.hidden = true;
+
+    // Destroy all existing chart instances
+    Object.values(Chart.instances || {}).forEach((c) => { try { c.destroy(); } catch (_) {} });
+
+    // Reset card reveal state so scroll animation replays
+    document.querySelectorAll(".card").forEach((c) => c.classList.remove("in"));
+
+    // Update kicker and stat label
+    document.getElementById("kicker").textContent =
+      `observatory / ${RANGE_LABEL[days] || `last ${days} days`} / live from the github search api`;
+    document.getElementById("statPeriodLabel").textContent = STARS_LABEL[days] || "stars";
+
     try {
-      const items = await fetchTrending();
+      const items = await fetchTrending(days);
       loading.hidden = true;
       grid.hidden = false;
       render(items);
       observeCards();
     } catch (err) {
       loading.hidden = true;
-      const box = document.getElementById("error");
-      box.hidden = false;
+      errorBox.hidden = false;
       document.getElementById("errorMsg").textContent = String(err.message || err);
     }
-  })();
+  }
+
+  // Wire up filter buttons
+  document.getElementById("rangeBar").addEventListener("click", (e) => {
+    const btn = e.target.closest(".range-btn");
+    if (!btn) return;
+    document.querySelectorAll(".range-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    refreshCharts(Number(btn.dataset.days));
+  });
+
+  refreshCharts(7);
 })();
