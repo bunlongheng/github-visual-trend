@@ -161,6 +161,14 @@ a:hover { text-decoration: underline; }
   text-underline-offset: 4px;
   text-decoration-thickness: 1.5px;
 }
+.range-btn--trending {
+  color: var(--s1);
+  margin-right: 8px;
+  padding-right: 12px;
+  border-right: 1px solid var(--grid);
+}
+.range-btn--trending:hover { color: var(--s2); }
+.range-btn--trending.active { color: var(--s1); }
 
 .card-trophy {
   display: inline-block;

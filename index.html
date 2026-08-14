@@ -21,6 +21,7 @@
   <div class="hero-inner">
     <p class="kicker" id="kicker">observatory / last 7 days / live from the github search api</p>
     <nav class="range-bar" id="rangeBar" aria-label="Time range">
+      <button class="range-btn range-btn--trending" data-days="trending">trending</button>
       <button class="range-btn" data-days="1">day</button>
       <button class="range-btn active" data-days="7">week</button>
       <button class="range-btn" data-days="30">month</button>
@@ -144,7 +145,7 @@
 </main>
 
 <footer class="foot">
-  <p class="mono">data: GitHub Search API - repositories created in the last 7 days, ranked by stars, top 100. cached 30 min in your browser.</p>
+  <p class="mono">data: "trending" button = github.com/trending (week of 2026-08-10, 17 repos via GitHub API). time-range buttons = GitHub Search API (repos created in range, top 100). both cached 30 min in browser.</p>
   <p class="mono">github-visual-trend - built by <a href="https://github.com/bunlongheng">bunlongheng</a></p>
 </footer>
 

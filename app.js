@@ -127,6 +127,62 @@
   const CACHE_TTL = 30 * 60 * 1000;
   const cacheKey = (days) => `gvt-v2-${days}`;
 
+  // Real github.com/trending repos - week of 2026-08-10
+  const REAL_TRENDING_REPOS = [
+    "huangruiteng/loopx",
+    "firecrawl/pdf-inspector",
+    "TencentCloud/TencentDB-Agent-Memory",
+    "zhaoxuya520/reverse-skill",
+    "esengine/DeepSeek-Reasonix",
+    "lyogavin/airllm",
+    "semantica-agi/semantica",
+    "google/skills",
+    "virgiliojr94/book-to-skill",
+    "unclebob/swarm-forge",
+    "drawdb-io/drawdb",
+    "usekaneo/kaneo",
+    "microsoft/AI-For-Beginners",
+    "Comfy-Org/ComfyUI",
+    "vitali87/code-graph-rag",
+    "goauthentik/authentik",
+    "DataExpert-io/data-engineer-handbook",
+  ];
+
+  async function fetchRealTrending() {
+    const key = "gvt-trending-2026-08-10";
+    try {
+      const hit = JSON.parse(localStorage.getItem(key) || "null");
+      if (hit && Date.now() - hit.at < CACHE_TTL) return hit.items;
+    } catch (_) {}
+
+    const results = await Promise.all(
+      REAL_TRENDING_REPOS.map(async (fullName) => {
+        const res = await fetch(`https://api.github.com/repos/${fullName}`, {
+          headers: { Accept: "application/vnd.github+json" },
+        });
+        if (!res.ok) return null;
+        const r = await res.json();
+        return {
+          name: r.full_name,
+          short: r.name,
+          stars: r.stargazers_count,
+          forks: r.forks_count,
+          issues: r.open_issues_count,
+          language: r.language || "Unknown",
+          license: r.license ? r.license.spdx_id : "None",
+          ownerType: r.owner.type,
+          owner: r.owner.login,
+          topics: r.topics || [],
+          created: r.created_at,
+          url: r.html_url,
+        };
+      })
+    );
+    const items = results.filter(Boolean);
+    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (_) {}
+    return items;
+  }
+
   const RANGE_LABEL = {
     1: "last 24 hours", 7: "last 7 days", 30: "last 30 days",
     90: "last 3 months", 180: "last 6 months", 365: "last year",
@@ -545,19 +601,17 @@
     grid.hidden = true;
     errorBox.hidden = true;
 
-    // Destroy all existing chart instances
     Object.values(Chart.instances || {}).forEach((c) => { try { c.destroy(); } catch (_) {} });
-
-    // Reset card reveal state so scroll animation replays
     document.querySelectorAll(".card").forEach((c) => c.classList.remove("in"));
 
-    // Update kicker and stat label
-    document.getElementById("kicker").textContent =
-      `observatory / ${RANGE_LABEL[days] || `last ${days} days`} / live from the github search api`;
-    document.getElementById("statPeriodLabel").textContent = STARS_LABEL[days] || "stars";
+    const isTrending = days === "trending";
+    document.getElementById("kicker").textContent = isTrending
+      ? "observatory / github.com/trending / week of 2026-08-10 / live repo details"
+      : `observatory / ${RANGE_LABEL[days] || `last ${days} days`} / live from the github search api`;
+    document.getElementById("statPeriodLabel").textContent = isTrending ? "stars total" : (STARS_LABEL[days] || "stars");
 
     try {
-      const items = await fetchTrending(days);
+      const items = isTrending ? await fetchRealTrending() : await fetchTrending(days);
       loading.hidden = true;
       grid.hidden = false;
       render(items);
@@ -569,13 +623,13 @@
     }
   }
 
-  // Wire up filter buttons
   document.getElementById("rangeBar").addEventListener("click", (e) => {
     const btn = e.target.closest(".range-btn");
     if (!btn) return;
     document.querySelectorAll(".range-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
-    refreshCharts(Number(btn.dataset.days));
+    const val = btn.dataset.days;
+    refreshCharts(val === "trending" ? "trending" : Number(val));
   });
 
   refreshCharts(7);
