@@ -35,10 +35,10 @@
 
   // staggered per-bar entrance
   const staggered = {
-    animation: { duration: 900, easing: "easeOutQuart" },
+    animation: { duration: 400, easing: "easeOutQuart" },
     animations: { y: { from: (ctx) => ctx.chart.scales.y ? ctx.chart.scales.y.getPixelForValue(0) : 0 } },
   };
-  const delayByIndex = (ctx) => (ctx.type === "data" ? ctx.dataIndex * 60 : 0);
+  const delayByIndex = (ctx) => (ctx.type === "data" ? ctx.dataIndex * 25 : 0);
 
   // ---- tiny tick icons (language logos + owner avatars) ----
   const LANG_ICON = {
@@ -260,6 +260,15 @@
   function render(items) {
     const byStars = [...items].sort((a, b) => b.stars - a.stars);
 
+    // quick repo list in hero
+    const ql = document.getElementById("quickList");
+    if (ql) {
+      const compact2 = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+      ql.innerHTML = byStars.slice(0, 25).map((r, i) =>
+        `<span><span class="ql-rank">${i + 1}.</span><a href="${r.url}" target="_blank" rel="noopener">${r.short}</a><span class="ql-stars">&#9733;${compact2.format(r.stars)}</span></span>`
+      ).join("");
+    }
+
     // hero stat tiles
     document.getElementById("statRepos").textContent = items.length;
     document.getElementById("statStars").textContent = compact.format(sum(items, (r) => r.stars));
@@ -281,7 +290,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => top[c[0].dataIndex].name, label: (c) => ` ${fmt.format(c.parsed.x)} stars` } },
@@ -306,7 +315,7 @@
         options: {
           maintainAspectRatio: false,
           cutout: "62%",
-          animation: { animateRotate: true, duration: 1100, easing: "easeOutQuart" },
+          animation: { animateRotate: true, duration: 420, easing: "easeOutQuart" },
           plugins: { legend: { position: "right" } },
         },
       });
@@ -326,7 +335,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => fast[c[0].dataIndex].name, label: (c) => ` ~${fmt.format(c.parsed.x)} stars/day` } },
@@ -354,7 +363,7 @@
         },
         options: {
           maintainAspectRatio: false,
-          animation: { duration: 1100, easing: "easeOutQuart", delay: (ctx) => (ctx.type === "data" ? ctx.dataIndex * 18 : 0) },
+          animation: { duration: 420, easing: "easeOutQuart", delay: (ctx) => (ctx.type === "data" ? ctx.dataIndex * 8 : 0) },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -387,7 +396,7 @@
         },
         options: {
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${fmt.format(c.parsed.y)} stars total` } } },
           scales: barScales(false),
         },
@@ -417,7 +426,7 @@
         },
         options: {
           maintainAspectRatio: false,
-          animation: { duration: 1400, easing: "easeInOutQuart" },
+          animation: { duration: 500, easing: "easeInOutQuart" },
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} repos created` } } },
           scales: {
             x: { grid: { color: "transparent" }, border: { color: v("--baseline") } },
@@ -442,7 +451,7 @@
         options: {
           maintainAspectRatio: false,
           cutout: "62%",
-          animation: { animateRotate: true, duration: 1100, easing: "easeOutQuart" },
+          animation: { animateRotate: true, duration: 420, easing: "easeOutQuart" },
           plugins: { legend: { position: "right" } },
         },
       });
@@ -463,7 +472,7 @@
         options: {
           maintainAspectRatio: false,
           cutout: "62%",
-          animation: { animateRotate: true, duration: 1100, easing: "easeOutQuart" },
+          animation: { animateRotate: true, duration: 420, easing: "easeOutQuart" },
           plugins: { legend: { position: "right" } },
         },
       });
@@ -486,7 +495,7 @@
         options: {
           layout: { padding: { bottom: 28 } },
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (c) => ` ${fmt.format(c.parsed.y)} avg stars (${langs[c.dataIndex][2]} repos)` } },
@@ -512,7 +521,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => top[c[0].dataIndex].name, label: (c) => ` ${fmt.format(c.parsed.x)} open issues` } },
@@ -539,7 +548,7 @@
           options: {
             indexAxis: "y",
             maintainAspectRatio: false,
-            animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+            animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` tagged on ${c.parsed.x} repos` } } },
             scales: { ...barScales(true), x: { ...barScales(true).x, ticks: { precision: 0 } } },
           },
@@ -569,7 +578,7 @@
         },
         options: {
           maintainAspectRatio: false,
-          animation: { duration: 900, easing: "easeOutQuart", delay: delayByIndex },
+          animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.y} repos` } } },
           scales: { ...barScales(false), y: { ...barScales(false).y, ticks: { precision: 0 } } },
         },
@@ -577,18 +586,23 @@
     }
   }
 
-  // ---------- reveal cards as they scroll in ----------
+  // ---------- reveal cards (immediate + staggered on scroll) ----------
   function observeCards() {
+    const cards = document.querySelectorAll(".card");
+    // show first row immediately
+    cards.forEach((c, i) => {
+      if (i < 3) { c.style.transitionDelay = `${i * 40}ms`; c.classList.add("in"); }
+    });
     const io = new IntersectionObserver((entries) => {
-      entries.forEach((e, i) => {
+      entries.forEach((e) => {
         if (e.isIntersecting) {
-          e.target.style.transitionDelay = `${(i % 3) * 90}ms`;
+          e.target.style.transitionDelay = "0ms";
           e.target.classList.add("in");
           io.unobserve(e.target);
         }
       });
-    }, { threshold: 0.12 });
-    document.querySelectorAll(".card").forEach((c) => io.observe(c));
+    }, { threshold: 0.05 });
+    cards.forEach((c, i) => { if (i >= 3) io.observe(c); });
   }
 
   // ---------- boot ----------
