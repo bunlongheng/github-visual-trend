@@ -134,15 +134,18 @@
   // ---------- data (cache-first: each view is fetched from GitHub at most once,
   //            then served from cache on every later filter change + refresh) ----------
   const CACHE_TTL = 6 * 60 * 60 * 1000;   // 6h - reuse across filter switches and refreshes
-  const cacheKey = (days) => `gvt-v2-${days}`;
+  const cacheKey = (days) => `gvt-v3-${days}`;
   const mem = new Map();       // in-session cache -> instant, zero network
   const inflight = new Map();  // de-dupe concurrent fetches of the same view
 
+  // only a NON-EMPTY result counts as a cache hit - an empty array (a transient rate-limit
+  // or a bad range) must never stick and block retries.
   function cacheGet(key) {
-    if (mem.has(key)) return mem.get(key);
+    const m = mem.get(key);
+    if (m && m.length) return m;
     try {
       const hit = JSON.parse(localStorage.getItem(key) || "null");
-      if (hit && Date.now() - hit.at < CACHE_TTL) { mem.set(key, hit.items); return hit.items; }
+      if (hit && hit.items && hit.items.length && Date.now() - hit.at < CACHE_TTL) { mem.set(key, hit.items); return hit.items; }
     } catch (_) {}
     return null;
   }
@@ -156,7 +159,7 @@
     if (cached) return Promise.resolve(cached);
     if (inflight.has(key)) return inflight.get(key);
     const p = fetcher()
-      .then((items) => { cacheSet(key, items); inflight.delete(key); return items; })
+      .then((items) => { if (items && items.length) cacheSet(key, items); inflight.delete(key); return items; })
       .catch((err) => { inflight.delete(key); throw err; });
     inflight.set(key, p);
     return p;
@@ -216,7 +219,7 @@
       const q = encodeURIComponent(`created:>${daysAgo(days)}`);
       const url = `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`;
       const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
-      if (!res.ok) throw new Error(`GitHub API ${res.status} - ${res.status === 403 ? "rate limited, retry in a minute" : res.statusText}`);
+      if (!res.ok) throw new Error(`GitHub API ${res.status} - ${res.status === 403 || res.status === 429 ? "rate limited (10 searches/min max, unauthenticated) - wait a minute" : res.statusText}`);
       const json = await res.json();
       return json.items.map(mapRepo);
     });
@@ -289,7 +292,7 @@
   }
 
   function render(items) {
-    if (!items.length) throw new Error("GitHub returned no repositories for this range - try again in a minute");
+    if (!items.length) throw new Error("No results back from GitHub. Its unauthenticated search allows only 10 requests/minute - wait a minute, then click again.");
     const byStars = [...items].sort((a, b) => b.stars - a.stars);
 
     // 01 - leaderboard: top 10 by stars
@@ -655,14 +658,30 @@
     }
   }
 
+  // shareable deep links: ?interval=day|week|month|3m|6m|1y|3y|5y (bare URL = trending)
+  const DAYS_TO_NAME = { trending: "trending", "1": "day", "7": "week", "30": "month", "90": "3m", "180": "6m", "365": "1y", "1095": "3y", "1825": "5y" };
+  const NAME_TO_DAYS = Object.fromEntries(Object.entries(DAYS_TO_NAME).map(([d, n]) => [n, d]));
+
+  function selectRange(daysVal, syncUrl) {
+    document.querySelectorAll(".range-btn").forEach((b) => b.classList.toggle("active", b.dataset.days === daysVal));
+    if (syncUrl) {
+      const name = DAYS_TO_NAME[daysVal] || "trending";
+      history.replaceState(null, "", name === "trending" ? location.pathname : `?interval=${name}`);
+    }
+    refreshCharts(daysVal === "trending" ? "trending" : Number(daysVal));
+  }
+
   document.getElementById("rangeBar").addEventListener("click", (e) => {
     const btn = e.target.closest(".range-btn");
-    if (!btn) return;
-    document.querySelectorAll(".range-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    const val = btn.dataset.days;
-    refreshCharts(val === "trending" ? "trending" : Number(val));
+    if (btn) selectRange(btn.dataset.days, true);
   });
 
-  refreshCharts("trending");
+  const fromUrl = () => {
+    const name = new URLSearchParams(location.search).get("interval");
+    return (name && NAME_TO_DAYS[name]) || "trending";
+  };
+  window.addEventListener("popstate", () => selectRange(fromUrl(), false));
+
+  // boot: honor ?interval= if present, otherwise the trending default
+  selectRange(fromUrl(), false);
 })();
