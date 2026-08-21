@@ -1,4 +1,4 @@
-# github-visual-trend
+# visual-trends
 
 [github.com/trending](https://github.com/trending) is a list. Lists hide the story.
 

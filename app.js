@@ -1,4 +1,4 @@
-/* github-visual-trend
+/* visual-trends
    Pulls the top 100 repositories created in the last 7 days (GitHub Search API,
    the closest public proxy for github.com/trending) and renders 12 animated
    Chart.js charts that tell the week's story. No build step, no key. */
