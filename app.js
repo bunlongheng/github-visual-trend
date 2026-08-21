@@ -123,9 +123,44 @@
     return horizontal ? { x: valueAxis, y: categoryAxis } : { x: categoryAxis, y: valueAxis };
   };
 
-  // ---------- data ----------
-  const CACHE_TTL = 30 * 60 * 1000;
+  // ---------- data (cache-first: each view is fetched from GitHub at most once,
+  //            then served from cache on every later filter change + refresh) ----------
+  const CACHE_TTL = 6 * 60 * 60 * 1000;   // 6h - reuse across filter switches and refreshes
   const cacheKey = (days) => `gvt-v2-${days}`;
+  const mem = new Map();       // in-session cache -> instant, zero network
+  const inflight = new Map();  // de-dupe concurrent fetches of the same view
+
+  function cacheGet(key) {
+    if (mem.has(key)) return mem.get(key);
+    try {
+      const hit = JSON.parse(localStorage.getItem(key) || "null");
+      if (hit && Date.now() - hit.at < CACHE_TTL) { mem.set(key, hit.items); return hit.items; }
+    } catch (_) {}
+    return null;
+  }
+  function cacheSet(key, items) {
+    mem.set(key, items);
+    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (_) {}
+  }
+  // cache -> in-flight promise -> a single network call, in that order
+  function load(key, fetcher) {
+    const cached = cacheGet(key);
+    if (cached) return Promise.resolve(cached);
+    if (inflight.has(key)) return inflight.get(key);
+    const p = fetcher()
+      .then((items) => { cacheSet(key, items); inflight.delete(key); return items; })
+      .catch((err) => { inflight.delete(key); throw err; });
+    inflight.set(key, p);
+    return p;
+  }
+
+  // one GitHub repo object -> our compact shape (shared by both loaders)
+  const mapRepo = (r) => ({
+    name: r.full_name, short: r.name, stars: r.stargazers_count, forks: r.forks_count,
+    issues: r.open_issues_count, language: r.language || "Unknown",
+    license: r.license ? r.license.spdx_id : "None", ownerType: r.owner.type,
+    owner: r.owner.login, topics: r.topics || [], created: r.created_at, url: r.html_url,
+  });
 
   // Real github.com/trending repos - week of 2026-08-10
   const REAL_TRENDING_REPOS = [
@@ -148,39 +183,19 @@
     "DataExpert-io/data-engineer-handbook",
   ];
 
-  async function fetchRealTrending() {
-    const key = "gvt-trending-2026-08-10";
-    try {
-      const hit = JSON.parse(localStorage.getItem(key) || "null");
-      if (hit && Date.now() - hit.at < CACHE_TTL) return hit.items;
-    } catch (_) {}
-
-    const results = await Promise.all(
-      REAL_TRENDING_REPOS.map(async (fullName) => {
-        const res = await fetch(`https://api.github.com/repos/${fullName}`, {
-          headers: { Accept: "application/vnd.github+json" },
-        });
-        if (!res.ok) return null;
-        const r = await res.json();
-        return {
-          name: r.full_name,
-          short: r.name,
-          stars: r.stargazers_count,
-          forks: r.forks_count,
-          issues: r.open_issues_count,
-          language: r.language || "Unknown",
-          license: r.license ? r.license.spdx_id : "None",
-          ownerType: r.owner.type,
-          owner: r.owner.login,
-          topics: r.topics || [],
-          created: r.created_at,
-          url: r.html_url,
-        };
-      })
-    );
-    const items = results.filter(Boolean);
-    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (_) {}
-    return items;
+  function fetchRealTrending() {
+    return load("gvt-trending-2026-08-10", async () => {
+      const results = await Promise.all(
+        REAL_TRENDING_REPOS.map(async (fullName) => {
+          const res = await fetch(`https://api.github.com/repos/${fullName}`, {
+            headers: { Accept: "application/vnd.github+json" },
+          });
+          if (!res.ok) return null;
+          return mapRepo(await res.json());
+        })
+      );
+      return results.filter(Boolean);
+    });
   }
 
   const daysAgo = (n) => {
@@ -188,34 +203,15 @@
     return d.toISOString().slice(0, 10);
   };
 
-  async function fetchTrending(days) {
-    const key = cacheKey(days);
-    try {
-      const hit = JSON.parse(localStorage.getItem(key) || "null");
-      if (hit && Date.now() - hit.at < CACHE_TTL) return hit.items;
-    } catch (_) { /* stale cache is not fatal */ }
-
-    const q = encodeURIComponent(`created:>${daysAgo(days)}`);
-    const url = `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`;
-    const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
-    if (!res.ok) throw new Error(`GitHub API ${res.status} - ${res.status === 403 ? "rate limited, retry in a minute" : res.statusText}`);
-    const json = await res.json();
-    const items = json.items.map((r) => ({
-      name: r.full_name,
-      short: r.name,
-      stars: r.stargazers_count,
-      forks: r.forks_count,
-      issues: r.open_issues_count,
-      language: r.language || "Unknown",
-      license: r.license ? r.license.spdx_id : "None",
-      ownerType: r.owner.type,
-      owner: r.owner.login,
-      topics: r.topics || [],
-      created: r.created_at,
-      url: r.html_url,
-    }));
-    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), items })); } catch (_) { /* quota */ }
-    return items;
+  function fetchTrending(days) {
+    return load(cacheKey(days), async () => {
+      const q = encodeURIComponent(`created:>${daysAgo(days)}`);
+      const url = `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`;
+      const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) throw new Error(`GitHub API ${res.status} - ${res.status === 403 ? "rate limited, retry in a minute" : res.statusText}`);
+      const json = await res.json();
+      return json.items.map(mapRepo);
+    });
   }
 
   // ---------- transforms ----------
@@ -246,6 +242,14 @@
     document.getElementById(`story-${id}`).textContent = text;
   }
 
+  // click a bar/point -> open that repo on github.com (new tab); pointer cursor on hover
+  function repoLink(urlAt) {
+    return {
+      onClick: (_e, els) => { if (els.length) { const u = urlAt(els[0].index); if (u) window.open(u, "_blank", "noopener"); } },
+      onHover: (e, els) => { e.native.target.style.cursor = els.length ? "pointer" : "default"; },
+    };
+  }
+
   function render(items) {
     if (!items.length) throw new Error("GitHub returned no repositories for this range - try again in a minute");
     const byStars = [...items].sort((a, b) => b.stars - a.stars);
@@ -254,7 +258,7 @@
     {
       const top = byStars.slice(0, 10);
       story("leaders", `${top[0].name} leads the week with ${fmt.format(top[0].stars)} stars - ` +
-        `${(top[0].stars / Math.max(1, top[9].stars)).toFixed(1)}x the #10 spot. Hover a bar for the repo.`);
+        `${(top[0].stars / Math.max(1, top[9].stars)).toFixed(1)}x the #10 spot. Click a bar to open the repo.`);
       make("leaders", {
         type: "bar",
         data: {
@@ -264,6 +268,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
+          ...repoLink((i) => top[i] && top[i].url),
           animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
@@ -309,6 +314,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
+          ...repoLink((i) => fast[i] && fast[i].url),
           animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
@@ -337,6 +343,7 @@
         },
         options: {
           maintainAspectRatio: false,
+          ...repoLink((i) => top40[i] && top40[i].url),
           animation: { duration: 420, easing: "easeOutQuart", delay: (ctx) => (ctx.type === "data" ? ctx.dataIndex * 8 : 0) },
           plugins: {
             legend: { display: false },
@@ -495,6 +502,7 @@
         options: {
           indexAxis: "y",
           maintainAspectRatio: false,
+          ...repoLink((i) => top[i] && top[i].url),
           animation: { duration: 380, easing: "easeOutQuart", delay: delayByIndex },
           plugins: {
             legend: { display: false },
@@ -616,5 +624,5 @@
     refreshCharts(val === "trending" ? "trending" : Number(val));
   });
 
-  refreshCharts(7);
+  refreshCharts("trending");
 })();

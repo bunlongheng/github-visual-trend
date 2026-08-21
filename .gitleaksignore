@@ -1,0 +1,4 @@
+# False positive: this fingerprint points at the string "gvt-trending-2026-08-10",
+# which is a localStorage cache-key literal in app.js fetchRealTrending() - not a
+# credential. Verified 2026-08-21. gitleaks generic-api-key flags it on entropy alone.
+6ccfa535c94c23e3a28444bfc4da8783252db1c4:app.js:generic-api-key:152
