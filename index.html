@@ -5,13 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Trends - GitHub trending, told in charts</title>
 <meta name="description" content="GitHub trending turned into 12 animated charts. The list is a table; this is the story." />
+<meta name="theme-color" content="#0d0d0d" />
+<link rel="canonical" href="https://trends-bheng.vercel.app/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="trophy.png" />
+
+<!-- icons + PWA -->
 <link rel="icon" href="favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="favicon.png" sizes="32x32" />
+<link rel="icon" type="image/png" href="icon-192.png" sizes="192x192" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+
+<!-- Open Graph (share card) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Trends" />
+<meta property="og:title" content="Trends - GitHub trending, told in charts" />
+<meta property="og:description" content="GitHub's rising repositories as 12 animated Chart.js visualizations. The list is a table; this is the story." />
+<meta property="og:url" content="https://trends-bheng.vercel.app/" />
+<meta property="og:image" content="https://trends-bheng.vercel.app/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Trends - GitHub trending as 12 animated charts" />
+
+<!-- Twitter card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Trends - GitHub trending, told in charts" />
+<meta name="twitter:description" content="GitHub's rising repositories as 12 animated Chart.js visualizations." />
+<meta name="twitter:image" content="https://trends-bheng.vercel.app/og.png" />
+<meta name="twitter:image:alt" content="Trends - GitHub trending as 12 animated charts" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
 </head>
 <body>
