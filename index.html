@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Visual Trends - GitHub trending, told in charts</title>
+<title>Trends - GitHub trending, told in charts</title>
 <meta name="description" content="GitHub trending turned into 12 animated charts. The list is a table; this is the story." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,14 +12,17 @@
 <link rel="icon" href="trophy.png" />
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
 
-<header class="hero">
-  <div class="hero-inner">
-    <p class="kicker" id="kicker">observatory / last 7 days / live from the github search api</p>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="./" aria-label="Trends - home">
+      <img src="trophy.png" class="brand-mark" alt="" />
+      <span class="brand-name">Trends</span>
+    </a>
     <nav class="range-bar" id="rangeBar" aria-label="Time range">
       <button class="range-btn range-btn--trending" data-days="trending">trending</button>
       <button class="range-btn" data-days="1">day</button>
@@ -31,14 +34,6 @@
       <button class="range-btn" data-days="1095">3y</button>
       <button class="range-btn" data-days="1825">5y</button>
     </nav>
-    <h1 class="hero-title">The trending page,<br /><em>told in charts.</em></h1>
-    <div id="quickList"></div>
-    <div class="stat-row" id="statRow">
-      <div class="stat-tile"><span class="stat-value" id="statRepos">-</span><span class="stat-label">repos scanned</span></div>
-      <div class="stat-tile"><span class="stat-value" id="statStars">-</span><span class="stat-label" id="statPeriodLabel">stars this week</span></div>
-      <div class="stat-tile"><span class="stat-value" id="statLang">-</span><span class="stat-label">top language</span></div>
-      <div class="stat-tile"><span class="stat-value" id="statLeader">-</span><span class="stat-label">week's leader</span></div>
-    </div>
   </div>
 </header>
 
@@ -74,7 +69,7 @@
       <div class="canvas-wrap"><canvas id="c-velocity"></canvas></div>
     </article>
 
-    <article class="card span2" data-chart="scatter">
+    <article class="card" data-chart="scatter">
       <div class="card-head"><span class="card-num">04</span>
         <div><h2>Stars vs forks</h2><p class="story" id="story-scatter"></p></div>
       </div>
@@ -142,7 +137,7 @@
 
 <footer class="foot">
   <p class="mono">data: "trending" button = github.com/trending (week of 2026-08-10, 17 repos via GitHub API). time-range buttons = GitHub Search API (repos created in range, top 100). both cached 30 min in browser.</p>
-  <p class="mono">visual-trends - built by <a href="https://github.com/bunlongheng">bunlongheng</a></p>
+  <p class="mono">trends - built by <a href="https://github.com/bunlongheng">bunlongheng</a></p>
 </footer>
 
 <script src="app.js"></script>

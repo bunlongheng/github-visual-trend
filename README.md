@@ -1,4 +1,4 @@
-# visual-trends
+# trends
 
 [github.com/trending](https://github.com/trending) is a list. Lists hide the story.
 
@@ -35,6 +35,11 @@ in which language, at what velocity, and how lopsided the race really is.
 python3 -m http.server 8080
 # open http://localhost:8080
 ```
+
+## Notes on the data
+
+- **Rate limit**: unauthenticated GitHub API allows 60 requests/hour per IP. The 30-minute `localStorage` cache keeps normal browsing well under that; hammer the range buttons and you may hit a `403` (the app shows a "rate limited, retry in a minute" message).
+- **The `trending` button**: GitHub has no public API for github.com/trending, so that view is a labeled static snapshot of one week's trending repos (their live star/fork/issue counts are still fetched fresh). Every other range is fully live from the Search API.
 
 ## Design notes
 

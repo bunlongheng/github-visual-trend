@@ -1,4 +1,4 @@
-/* visual-trends
+/* trends
    Pulls the top 100 repositories created in the last 7 days (GitHub Search API,
    the closest public proxy for github.com/trending) and renders 12 animated
    Chart.js charts that tell the week's story. No build step, no key. */
@@ -183,17 +183,6 @@
     return items;
   }
 
-  const RANGE_LABEL = {
-    1: "last 24 hours", 7: "last 7 days", 30: "last 30 days",
-    90: "last 3 months", 180: "last 6 months", 365: "last year",
-    1095: "last 3 years", 1825: "last 5 years",
-  };
-  const STARS_LABEL = {
-    1: "stars today", 7: "stars this week", 30: "stars this month",
-    90: "stars (3m)", 180: "stars (6m)", 365: "stars this year",
-    1095: "stars (3y)", 1825: "stars (5y)",
-  };
-
   const daysAgo = (n) => {
     const d = new Date(Date.now() - n * 864e5);
     return d.toISOString().slice(0, 10);
@@ -258,23 +247,8 @@
   }
 
   function render(items) {
+    if (!items.length) throw new Error("GitHub returned no repositories for this range - try again in a minute");
     const byStars = [...items].sort((a, b) => b.stars - a.stars);
-
-    // quick repo list in hero
-    const ql = document.getElementById("quickList");
-    if (ql) {
-      const compact2 = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-      ql.innerHTML = byStars.slice(0, 25).map((r, i) =>
-        `<span><span class="ql-rank">${i + 1}.</span><a href="${r.url}" target="_blank" rel="noopener">${r.short}</a><span class="ql-stars">&#9733;${compact2.format(r.stars)}</span></span>`
-      ).join("");
-    }
-
-    // hero stat tiles
-    document.getElementById("statRepos").textContent = items.length;
-    document.getElementById("statStars").textContent = compact.format(sum(items, (r) => r.stars));
-    const topLang = topLanguages(items, 1)[0];
-    document.getElementById("statLang").textContent = topLang ? topLang[0] : "-";
-    document.getElementById("statLeader").textContent = byStars[0].short;
 
     // 01 - leaderboard: top 10 by stars
     {
@@ -619,10 +593,6 @@
     document.querySelectorAll(".card").forEach((c) => c.classList.remove("in"));
 
     const isTrending = days === "trending";
-    document.getElementById("kicker").textContent = isTrending
-      ? "observatory / github.com/trending / week of 2026-08-10 / live repo details"
-      : `observatory / ${RANGE_LABEL[days] || `last ${days} days`} / live from the github search api`;
-    document.getElementById("statPeriodLabel").textContent = isTrending ? "stars total" : (STARS_LABEL[days] || "stars");
 
     try {
       const items = isTrending ? await fetchRealTrending() : await fetchTrending(days);
