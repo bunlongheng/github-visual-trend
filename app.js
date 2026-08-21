@@ -123,6 +123,14 @@
     return horizontal ? { x: valueAxis, y: categoryAxis } : { x: categoryAxis, y: valueAxis };
   };
 
+  // horizontal-bar scales with the y (category) labels made transparent - the gutter space
+  // stays reserved so labelLinksPlugin can overlay real, clickable <a> repo links there.
+  const linkableScales = () => {
+    const s = barScales(true);
+    s.y = { ...s.y, ticks: { color: "transparent" } };
+    return s;
+  };
+
   // ---------- data (cache-first: each view is fetched from GitHub at most once,
   //            then served from cache on every later filter change + refresh) ----------
   const CACHE_TTL = 6 * 60 * 60 * 1000;   // 6h - reuse across filter switches and refreshes
@@ -250,6 +258,36 @@
     };
   }
 
+  // overlay real <a> links over a horizontal-bar chart's y-axis labels, so each repo NAME
+  // in the list is a visible, clickable anchor that opens the repo on GitHub. Built with the
+  // DOM (no innerHTML) and re-synced only when the layout changes.
+  function labelLinksPlugin(getRepos) {
+    return {
+      id: "labelLinks",
+      afterDraw(chart) {
+        const y = chart.scales.y, area = chart.chartArea;
+        if (!y || !area) return;
+        const repos = getRepos();
+        const wrap = chart.canvas.parentNode;
+        let box = wrap.querySelector(".label-links");
+        if (!box) { box = document.createElement("div"); box.className = "label-links"; wrap.appendChild(box); }
+        const sig = repos.length + ":" + Math.round(area.left) + ":" + Math.round(y.getPixelForValue(0));
+        if (box.dataset.sig === sig && box.childElementCount === repos.length) return;
+        box.dataset.sig = sig;
+        box.style.width = area.left + "px";
+        box.textContent = "";
+        repos.forEach((r, i) => {
+          const a = document.createElement("a");
+          a.className = "label-link";
+          a.href = r.url; a.target = "_blank"; a.rel = "noopener";
+          a.title = r.name; a.textContent = r.short;
+          a.style.top = y.getPixelForValue(i) + "px";
+          box.appendChild(a);
+        });
+      },
+    };
+  }
+
   function render(items) {
     if (!items.length) throw new Error("GitHub returned no repositories for this range - try again in a minute");
     const byStars = [...items].sort((a, b) => b.stars - a.stars);
@@ -274,8 +312,9 @@
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => top[c[0].dataIndex].name, label: (c) => ` ${fmt.format(c.parsed.x)} stars` } },
           },
-          scales: barScales(true),
+          scales: linkableScales(),
         },
+        plugins: [labelLinksPlugin(() => top)],
       });
     }
 
@@ -320,8 +359,9 @@
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => fast[c[0].dataIndex].name, label: (c) => ` ~${fmt.format(c.parsed.x)} stars/day` } },
           },
-          scales: barScales(true),
+          scales: linkableScales(),
         },
+        plugins: [labelLinksPlugin(() => fast)],
       });
     }
 
@@ -508,9 +548,9 @@
             legend: { display: false },
             tooltip: { callbacks: { title: (c) => top[c[0].dataIndex].name, label: (c) => ` ${fmt.format(c.parsed.x)} open issues` } },
           },
-          scales: barScales(true),
+          scales: linkableScales(),
         },
-        plugins: [axisImgPlugin(ownerImgs, "y")],
+        plugins: [axisImgPlugin(ownerImgs, "y"), labelLinksPlugin(() => top)],
       });
     }
 

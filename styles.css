@@ -229,6 +229,23 @@ a:hover { text-decoration: underline; }
 .canvas-wrap.tall { height: 380px; }
 .canvas-wrap canvas { max-width: 100%; }
 
+/* real clickable repo links overlaid on the y-axis labels of bar charts */
+.label-links { position: absolute; left: 0; top: 0; height: 100%; pointer-events: none; z-index: 2; }
+.label-link {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  text-decoration: none;
+  cursor: pointer;
+}
+.label-link:hover { color: var(--ink); text-decoration: underline; }
+.label-link:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 2px; }
+
 /* ---------- footer ---------- */
 .foot {
   border-top: 1px solid var(--grid);
